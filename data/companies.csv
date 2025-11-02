@@ -1,0 +1,6 @@
+company,ticker,sector,world_impact_score,environmental,social,governance,transparency_index,scope_1_3_emissions_mt,sustainability_investment_ratio_pct,data_confidence_pct
+Acme Energy,ACME,Energy,42,31,54,40,Low,340,1.2,67
+Polaris Manufacturing,POLA,Manufacturing,63,58,61,70,Medium,12.8,3.5,82
+Global Foods,GFD,Food,78,81,90,83,High,14.2,5.6,95
+Atlas Transport,ATX,Transport,55,48,58,54,Medium,42.0,2.3,74
+EcoBuild Materials,EBM,Construction,85,88,82,86,High,9.5,6.8,91
