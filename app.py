@@ -1,62 +1,40 @@
-﻿import dash
-from dash import html, dcc, Input, Output
-import dash_ag_grid as dag
+﻿import os
+import dash
+from dash import html, dcc
+from dash_ag_grid import AgGrid as dag
 import pandas as pd
 
-# --- Initialize app ---
-app = dash.Dash(__name__, suppress_callback_exceptions=True)
-app.title = "Global Footprint with AI"
+from utils.data_loader import load_companies
+from utils.scoring import compute_world_impact_score
+from utils.api_clients import extract_company_esg
 
-# --- Sample data ---
-data = [
-    {
-        "Name": "Company A",
-        "Sector": "Energy",
-        "World Impact Score": 72,
-        "Environmental": 70,
-        "Social": 65,
-        "Governance": 80,
-        "Transparency Index": 60,
-        "Scope 1-3 Emissions": "High",
-        "Sustainability Investment Ratio": "12%",
-        "Data Confidence": "High",
-    },
-    {
-        "Name": "Company B",
-        "Sector": "Tech",
-        "World Impact Score": 88,
-        "Environmental": 85,
-        "Social": 82,
-        "Governance": 90,
-        "Transparency Index": 75,
-        "Scope 1-3 Emissions": "Medium",
-        "Sustainability Investment Ratio": "28%",
-        "Data Confidence": "Medium",
-    },
-]
-df = pd.DataFrame(data)
+# ------------- LOAD DATA -------------
+companies = load_companies()
 
-# --- Build columnDefs using flex to auto-fit content ---
+# ------------- DEFINE COLUMNS FOR TABLE -------------
 columnDefs = [
-    {"headerName": "Name", "field": "Name", "flex": 1},
-    {"headerName": "Sector", "field": "Sector", "flex": 1},
-    {"headerName": "World\nImpact\nScore", "field": "World Impact Score", "flex": 1},
-    {"headerName": "Environmental", "field": "Environmental", "flex": 1},
-    {"headerName": "Social", "field": "Social", "flex": 1},
-    {"headerName": "Governance", "field": "Governance", "flex": 1},
-    {"headerName": "Transparency\nIndex", "field": "Transparency Index", "flex": 1},
-    {"headerName": "Scope 1–3\nEmissions", "field": "Scope 1-3 Emissions", "flex": 1},
-    {"headerName": "Sustainability\nInvestment\nRatio", "field": "Sustainability Investment Ratio", "flex": 1},
-    {"headerName": "Data\nConfidence", "field": "Data Confidence", "flex": 1},
-    {"headerName": "Report", "field": "Report", "cellRenderer": "AgGridButton", "cellRendererParams": {"label": "View"}, "flex": 1},
-    {"headerName": "Remove", "field": "Remove", "cellRenderer": "AgGridButton", "cellRendererParams": {"label": "✖"}, "flex": 1},
+    {"headerName": "Name", "field": "Name", "sortable": True, "filter": True},
+    {"headerName": "Sector", "field": "Sector", "sortable": True, "filter": True},
+    {"headerName": "World Impact Score", "field": "WorldImpactScore", "sortable": True},
+    {"headerName": "Environmental", "field": "Environmental"},
+    {"headerName": "Social", "field": "Social"},
+    {"headerName": "Governance", "field": "Governance"},
+    {"headerName": "Transparency Index", "field": "TransparencyIndex"},
+    {"headerName": "Scope 1-3 Emissions", "field": "ScopeEmissions"},
+    {"headerName": "Sustainability Investment Ratio", "field": "SustainabilityInvestmentRatio"},
+    {"headerName": "Data Confidence", "field": "DataConfidence"},
+    # Extra columns left empty for now
+    {"headerName": "Report", "field": "Report", "cellRenderer": "''"},
+    {"headerName": "Remove", "field": "Remove", "cellRenderer": "''"}
 ]
 
+# ------------- CREATE APP -------------
+app = dash.Dash(__name__)
+app.title = "Global Footprint Tracker"
 
-# --- Layout ---
+# ------------- LAYOUT -------------
 app.layout = html.Div([
-
-    # Fixed navigation bar
+    # Fixed top nav
     html.Nav([
         html.Div("🌍 Global Footprint with AI", className="nav-logo"),
         html.Ul([
@@ -68,7 +46,6 @@ app.layout = html.Div([
         ], className="nav-links")
     ], className="navbar"),
 
-    # Page content
     html.Div([
         # Home section
         html.Section([
@@ -93,10 +70,11 @@ app.layout = html.Div([
             dcc.Input(id="search-bar", type="text", placeholder="Search company...", className="search-bar"),
             html.Button("Search", id="search-btn", className="search-btn"),
             html.Br(), html.Br(),
-            dag.AgGrid(
+
+            dag(
                 id="watch-table",
                 columnDefs=columnDefs,
-                rowData=df.to_dict("records"),
+                rowData=companies.to_dict("records"),  # now pre-populated automatically
                 defaultColDef={
                     "sortable": True,
                     "filter": True,
@@ -104,10 +82,7 @@ app.layout = html.Div([
                     "wrapHeaderText": True,
                     "autoHeaderHeight": True,
                 },
-                dashGridOptions={
-                    "domLayout": "autoHeight",
-                    "animateRows": True
-                },
+                dashGridOptions={"domLayout": "autoHeight", "animateRows": True},
                 style={"width": "100%", "marginBottom": "20px"}
             )
         ], id="watchlist-section", className="section"),
@@ -118,7 +93,7 @@ app.layout = html.Div([
             html.Div("Select a company from the Watchlist to generate a detailed AI sustainability report.", className="report-window")
         ], id="reports-section", className="section"),
 
-        # About section
+        # Reliability
         html.Section([
             html.H2("How and Why This Score Can Be Used"),
             html.P("""
@@ -137,7 +112,7 @@ app.layout = html.Div([
     ])
 ])
 
-# Smooth scroll
+# Smooth scroll JS
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -169,4 +144,4 @@ app.index_string = '''
 '''
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
